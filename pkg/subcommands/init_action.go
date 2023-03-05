@@ -1,7 +1,10 @@
 package subcommands
 
-import "errors"
+import (
+    "errors"
+    "github.com/jet/pkg/boundaries"
+)
 
-func Init() error {
+func Init(fileSys boundaries.FileSystem) error {
 	return errors.New("error")
 }
