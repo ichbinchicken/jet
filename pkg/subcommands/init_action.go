@@ -3,25 +3,19 @@ package subcommands
 import (
 	"fmt"
 	"github.com/jet/pkg/boundaries"
-	"github.com/urfave/cli/v2"
 )
 
 /**
-Only cares about the happy path and omit the error handling for now.
-*/
+ * Only cares about the happy path and omit the error handling for now.
+ */
 
-func Init(ctx *cli.Context, fileSys boundaries.FileSystem) error {
+func Init(fileSys boundaries.FileSystem) error {
 	var dirs = []string{
 		"objects",
 		"refs",
 	}
 
-	//cwd, err := getCwd()
-	//if err != nil {
-	//    return fmt.Errorf("cannot get cwd: %w", err)
-	//}
-	//path := cwd + ctx.Args().Get(0) + ".jet"
-
+	// It will just create a .jet folder at the CWD.
 	for _, dir := range dirs {
 		err := fileSys.MakeDirs("./.jet/" + dir)
 		if err != nil {
@@ -34,12 +28,3 @@ func Init(ctx *cli.Context, fileSys boundaries.FileSystem) error {
 
 	return nil
 }
-
-//func getCwd() (string, error) {
-//	ex, err := os.Executable()
-//	if err != nil {
-//		return "", err
-//	}
-//	exPath := filepath.Dir(ex)
-//	return exPath, nil
-//}

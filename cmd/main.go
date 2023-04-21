@@ -35,7 +35,8 @@ func Run(fileSys boundaries.FileSystem) {
 				Usage:       "./jet init",
 				Description: "Initialize a new Jet repo",
 				Action: func(ctx *cli.Context) error {
-					return subcommands.Init(ctx, fileSys)
+					// ctx is not used here
+					return subcommands.Init(fileSys)
 				},
 			},
 			{
