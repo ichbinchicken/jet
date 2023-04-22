@@ -55,6 +55,24 @@ func (suite *AllTest) TestCommitOnce() {
 func (suite *AllTest) TestGetDirEntriesWithoutJet_SkipSetup() {
 	entries := subcommands.GetDirEntriesWithoutJet(suite.targetDirPath, suite.fs)
 	suite.NotContains(entries, helper.DOTJET)
+	// read from /Users/zzheng2/glacier/jet-sample-repo/build.gradle
+	compressed, err := suite.fs.Read(filepath.Join(suite.targetDirPath, helper.DOTJET, helper.OBJECTS, "60", "58be211566308428ca6dcab3f08cf270cd9568"))
+	suite.NoError(err)
+	out, err := helper.Decompress([]byte(compressed))
+	suite.NoError(err)
+	want := "blob 112\x00" +
+		`apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile 'junit:junit:4.8.2'
+}
+`
+
+	suite.Equal(want, string(out))
 }
 
 // object.go
