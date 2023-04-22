@@ -1,27 +1,43 @@
 package subcommands
 
 import (
-	"github.com/jet/pkg/boundaries"
+	"fmt"
+	"github.com/jet/pkg/database"
 	"github.com/jet/pkg/helper"
+	"github.com/jet/pkg/subcommands/object"
 	"github.com/urfave/cli/v2"
 	"os"
+	"path/filepath"
 )
 
-func Commit(ctx *cli.Context, fileSys boundaries.FileSystem) error {
-	_, err := helper.AnyToString(ctx.App.Metadata["targetDirPath"])
-	if err != nil {
-		panic(err)
-	}
+func Commit(ctx *cli.Context, fs database.FileStorage) error {
+	rootPath := helper.AnyToString(ctx.App.Metadata["targetDirPath"])
+	objectsPath := filepath.Join(rootPath, helper.DOTJET, helper.OBJECTS)
 
-	//GetDirEntriesWithoutJet(path, fileSys)
+	// creating blobs
+	for _, entry := range GetDirEntriesWithoutJet(rootPath, fs) {
+		// right now we only create a blob when it's a file
+		if !entry.IsDir() {
+			contents, err := fs.Read(filepath.Join(rootPath, entry.Name()))
+			if err != nil {
+				return err
+			}
+			blob := object.NewBlob(contents)
+			fmt.Println(blob.ObjId())
+			fs.WriteBlob(objectsPath, &blob)
+		}
+	}
 
 	return nil
 }
 
-func GetDirEntriesWithoutJet(path string, fileSys boundaries.FileSystem) []os.DirEntry {
+//func createBlob(fs database.FileStorage, path string) *object.Object {
+//}
+
+func GetDirEntriesWithoutJet(path string, fs database.FileStorage) []os.DirEntry {
 	var dirEntries helper.GenericSlice[os.DirEntry]
 	var err error
-	dirEntries, err = fileSys.ListFiles(path)
+	dirEntries, err = fs.ListFiles(path)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +49,7 @@ func GetDirEntriesWithoutJet(path string, fileSys boundaries.FileSystem) []os.Di
 	*/
 
 	dirEntries = dirEntries.FilterOut(func(e os.DirEntry) bool {
-		if e.Name() == ".jet" {
+		if e.Name() == helper.DOTJET {
 			return true
 		} else {
 			return false
