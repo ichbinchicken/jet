@@ -5,12 +5,6 @@ import (
 	"compress/zlib"
 )
 
-const (
-	OBJECTS = "objects"
-	REFS    = "refs"
-	DOTJET  = ".jet"
-)
-
 func AnyToString(any interface{}) string {
 	anyString, ok := any.(string)
 	if !ok {

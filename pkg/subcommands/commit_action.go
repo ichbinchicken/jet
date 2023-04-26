@@ -1,7 +1,6 @@
 package subcommands
 
 import (
-	"fmt"
 	"github.com/jet/pkg/database"
 	"github.com/jet/pkg/helper"
 	"github.com/jet/pkg/subcommands/object"
@@ -13,26 +12,32 @@ import (
 func Commit(ctx *cli.Context, fs database.FileStorage) error {
 	rootPath := helper.AnyToString(ctx.App.Metadata["targetDirPath"])
 	objectsPath := filepath.Join(rootPath, helper.DOTJET, helper.OBJECTS)
-
-	// creating blobs
+	var blobs []object.Blob
+	// TODO: right now we only care about files only
 	for _, entry := range GetDirEntriesWithoutJet(rootPath, fs) {
-		// right now we only create a blob when it's a file
+		// write blob objects
 		if !entry.IsDir() {
 			contents, err := fs.Read(filepath.Join(rootPath, entry.Name()))
 			if err != nil {
 				return err
 			}
-			blob := object.NewBlob(contents)
-			fmt.Println(blob.ObjId())
-			fs.WriteBlob(objectsPath, &blob)
+			blob := object.NewBlob(contents, entry.Name())
+			blobs = append(blobs, blob)
+			err = fs.WriteJetObject(objectsPath, &blob)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	// write tree objects based on blobs
+	//tree := object.NewTree(blobs)
+	//err := fs.WriteJetObject(objectsPath, &tree)
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
-
-//func createBlob(fs database.FileStorage, path string) *object.Object {
-//}
 
 func GetDirEntriesWithoutJet(path string, fs database.FileStorage) []os.DirEntry {
 	var dirEntries helper.GenericSlice[os.DirEntry]
@@ -41,12 +46,6 @@ func GetDirEntriesWithoutJet(path string, fs database.FileStorage) []os.DirEntry
 	if err != nil {
 		panic(err)
 	}
-
-	/*
-			@zzmlearning
-			try to use filter()-like function so that I could do
-		    return dirEntries.filter(entry -> entry.Name() != ".jet")
-	*/
 
 	dirEntries = dirEntries.FilterOut(func(e os.DirEntry) bool {
 		if e.Name() == helper.DOTJET {

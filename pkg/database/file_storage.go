@@ -1,6 +1,7 @@
 package database
 
 import (
+	"encoding/hex"
 	"github.com/jet/pkg/helper"
 	"github.com/jet/pkg/subcommands/object"
 	"os"
@@ -13,14 +14,15 @@ type FileStorage interface {
 	MakeDirs(path string) error
 	ListFiles(path string) ([]os.DirEntry, error)
 	// git(jet) specific operations:
-	WriteBlob(jetPath string, obj *object.Object) error
+	WriteJetObject(objectsPath string, obj object.Object) error
 }
 
 type OsFileStorage struct{}
 
-func (fs *OsFileStorage) WriteBlob(objectsPath string, obj *object.Object) error {
+func (fs *OsFileStorage) WriteJetObject(objectsPath string, obj object.Object) error {
 	// create new dir
-	blobFileParentPath := filepath.Join(objectsPath, obj.ObjId()[:2])
+	hexStr := hex.EncodeToString(obj.Oid())
+	blobFileParentPath := filepath.Join(objectsPath, hexStr[:2])
 	err := fs.MakeDirs(blobFileParentPath)
 	if err != nil {
 		return err
@@ -34,7 +36,7 @@ func (fs *OsFileStorage) WriteBlob(objectsPath string, obj *object.Object) error
 	defer os.Remove(tmpFile.Name())
 
 	// compress the content
-	compressed, err := helper.Compress(obj.ObjData())
+	compressed, err := helper.Compress(obj.Odata())
 	if err != nil {
 		return err
 	}
@@ -46,7 +48,7 @@ func (fs *OsFileStorage) WriteBlob(objectsPath string, obj *object.Object) error
 	}
 
 	// rename
-	blobFilePath := filepath.Join(blobFileParentPath, obj.ObjId()[2:])
+	blobFilePath := filepath.Join(blobFileParentPath, hexStr[2:])
 	err = os.Rename(tmpFile.Name(), blobFilePath)
 	return err // err can be nil
 }

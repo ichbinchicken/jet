@@ -1,11 +1,11 @@
 package test
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/jet/pkg"
 	"github.com/jet/pkg/database"
 	"github.com/jet/pkg/helper"
-	"github.com/jet/pkg/subcommands"
 	"github.com/jet/pkg/subcommands/object"
 	"github.com/stretchr/testify/suite"
 	"github.com/urfave/cli/v2"
@@ -51,47 +51,52 @@ func (suite *AllTest) TestCommitOnce() {
 	}
 }
 
-// commit_action.go
-func (suite *AllTest) TestGetDirEntriesWithoutJet_SkipSetup() {
-	entries := subcommands.GetDirEntriesWithoutJet(suite.targetDirPath, suite.fs)
-	suite.NotContains(entries, helper.DOTJET)
-	// read from /Users/zzheng2/glacier/jet-sample-repo/build.gradle
-	compressed, err := suite.fs.Read(filepath.Join(suite.targetDirPath, helper.DOTJET, helper.OBJECTS, "60", "58be211566308428ca6dcab3f08cf270cd9568"))
-	suite.NoError(err)
-	out, err := helper.Decompress([]byte(compressed))
-	suite.NoError(err)
-	want := "blob 112\x00" +
-		`apply plugin: 'java'
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testCompile 'junit:junit:4.8.2'
-}
-`
-
-	suite.Equal(want, string(out))
-}
-
-// object.go
+// blob.go
 func (suite *AllTest) TestSHA1_SkipSetup() {
-	s := object.GenerateSHA1Hash("abc")
-	fmt.Println(string(s))
+	out := object.GenerateSHA1Hash("abc")
+	fmt.Println(hex.EncodeToString(out))
 }
 
-// test writeBlob
-func (suite *AllTest) TestWriteBlob_SkipSetup() {
-	blob := object.NewBlob("hello world 你好世界")
-	err := suite.fs.WriteBlob(filepath.Join(suite.targetDirPath), &blob)
-	defer os.RemoveAll(filepath.Join(suite.targetDirPath, blob.ObjId()[:2]))
+func (suite *AllTest) TestWriteBlobUnit_SkipSetup() {
+	original, err := suite.fs.Read(filepath.Join(".", "testing_file_ascii_only.txt"))
 	suite.NoError(err)
-	compressed, err := suite.fs.Read(filepath.Join(suite.targetDirPath, blob.ObjId()[:2], blob.ObjId()[2:]))
+
+	b := object.NewBlob(original, "testing_file_ascii_only.txt")
+	hexStr := hex.EncodeToString(b.Oid())
+
+	err = suite.fs.WriteJetObject(".", &b)
 	suite.NoError(err)
-	out, err := helper.Decompress([]byte(compressed))
+
+	compressed, err := os.ReadFile(filepath.Join(".", hexStr[:2], hexStr[2:]))
+	raw, err := helper.Decompress(compressed)
 	suite.NoError(err)
-	suite.Equal(fmt.Sprintf("blob 24\x00hello world 你好世界"), string(out))
+	suite.Equal(fmt.Sprintf("blob 2003\x00%s", original), string(raw))
+
+	// clean up the created blob
+	err = os.RemoveAll(filepath.Join(".", hexStr[:2]))
+	suite.NoError(err)
+}
+
+func (suite *AllTest) TestWriteTreeUnit_SkipSetup() {
+	blob := object.NewBlob("hello world 你好世界", "dummy.txt")
+	blob2 := object.NewBlob("こんにちは aloha", "dummy2.rb")
+	blob3 := object.NewBlob("こんにちは aloha", "dummy3.go")
+	blobs := []object.Blob{blob, blob2, blob3}
+	tree := object.NewTree(blobs)
+	hexStr := hex.EncodeToString(tree.Oid())
+
+	err := suite.fs.WriteJetObject(".", &tree)
+	suite.NoError(err)
+
+	compressed, err := os.ReadFile(filepath.Join(".", hexStr[:2], hexStr[2:]))
+	suite.NoError(err)
+	raw, err := helper.Decompress(compressed)
+	suite.NoError(err)
+	suite.Equal(tree.Odata(), raw)
+
+	// clean up the created blob
+	err = os.RemoveAll(filepath.Join(".", hexStr[:2]))
+	suite.NoError(err)
 }
 
 func TestSequentialOperations(t *testing.T) {
