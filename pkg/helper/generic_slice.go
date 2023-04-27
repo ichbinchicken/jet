@@ -13,6 +13,7 @@ func (s GenericSlice[K]) FilterOut(excluded func(e K) bool) GenericSlice[K] {
 	return result
 }
 
+// check this github issue: https://github.com/golang/go/issues/49085
 func MapSlice[K, V any](s GenericSlice[K], mapper func(e K) V) GenericSlice[V] {
 	result := make(GenericSlice[V], len(s))
 	for i, e := range s {

@@ -16,7 +16,7 @@ func Commit(ctx *cli.Context, fs database.FileStorage) error {
 	objectsPath := filepath.Join(rootPath, helper.DOTJET, helper.OBJECTS)
 	var blobs []object.Blob
 
-	// TODO: right ti we only care about files only
+	// TODO: right now we only care about files only
 	for _, entry := range GetDirEntriesWithoutJet(rootPath, fs) {
 		// write blob objects
 		if !entry.IsDir() {
