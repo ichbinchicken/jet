@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 type AllTest struct {
@@ -44,6 +45,11 @@ func (suite *AllTest) SetupTest() {
 }
 
 func (suite *AllTest) TestCommitOnce() {
+	in := `ISSUE-123: this is the first commit message.
+- Hello world
+- Hello again
+`
+	generateOsStdin(in)
 	err := suite.app.Run([]string{"program", "commit"})
 
 	if err != nil {
@@ -94,11 +100,70 @@ func (suite *AllTest) TestWriteTreeUnit_SkipSetup() {
 	suite.NoError(err)
 	suite.Equal(tree.Odata(), raw)
 
-	// clean up the created blob
+	// clean up the created tree
+	err = os.RemoveAll(filepath.Join(".", hexStr[:2]))
+	suite.NoError(err)
+}
+
+func (suite *AllTest) TestWriteCommitUnit_SkipSetup() {
+	commitMsg := `ISSUE-123: this is the first newCommit message.
+- Hello world
+- Hello again
+`
+	author := object.NewAuthor("zheng ziming", "zzm@jet.com", time.Now())
+
+	blob := object.NewBlob("hello world 你好世界", "dummy.txt")
+	blob2 := object.NewBlob("こんにちは aloha", "dummy2.rb")
+	blob3 := object.NewBlob("こんにちは aloha", "dummy3.go")
+	blobs := []object.Blob{blob, blob2, blob3}
+	tree := object.NewTree(blobs)
+	newCommit := object.NewCommit(author, commitMsg, tree.Oid())
+	hexStr := hex.EncodeToString(newCommit.Oid())
+
+	err := suite.fs.WriteJetObject(".", &newCommit)
+	suite.NoError(err)
+
+	compressed, err := os.ReadFile(filepath.Join(".", hexStr[:2], hexStr[2:]))
+	suite.NoError(err)
+	raw, err := helper.Decompress(compressed)
+	suite.NoError(err)
+	suite.Equal(newCommit.Odata(), raw)
+
+	// clean up the created commit
 	err = os.RemoveAll(filepath.Join(".", hexStr[:2]))
 	suite.NoError(err)
 }
 
 func TestSequentialOperations(t *testing.T) {
 	suite.Run(t, new(AllTest))
+}
+
+// not a best practice
+func generateOsStdin(in string) {
+	// Create a temporary file
+	tmpFile, err := os.CreateTemp(".", "test-*")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(tmpFile.Name()) // Clean up
+
+	// Write some data to the temporary file
+	_, err = tmpFile.WriteString(in)
+	if err != nil {
+		panic(err)
+	}
+
+	// Go back to the beginning of the file
+	_, err = tmpFile.Seek(0, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	// Replace os.Stdin with the temporary file
+	os.Stdin = tmpFile
+
+	//oldStdin := os.Stdin
+	//defer func() {
+	//	os.Stdin = oldStdin // Restore original os.Stdin
+	//}()
 }

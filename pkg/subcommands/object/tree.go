@@ -3,6 +3,7 @@ package object
 import (
 	"fmt"
 	"github.com/jet/pkg/helper"
+	"sort"
 )
 
 const (
@@ -51,6 +52,10 @@ func NewTree(blobs helper.GenericSlice[Blob]) Tree {
 
 func generateTreeContents(entries []entry) []byte {
 	var result []byte
+	// sort the entries by filename
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].name < entries[j].name
+	})
 	for _, en := range entries {
 		prefix := fmt.Sprintf("%s %s\x00", MODE, en.name)
 		result = append(result, []byte(prefix)...)

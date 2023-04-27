@@ -7,6 +7,7 @@ const (
 )
 
 const (
-	BlobType string = "blob"
-	TreeType string = "tree"
+	BlobType   string = "blob"
+	TreeType   string = "tree"
+	CommitType string = "commit"
 )

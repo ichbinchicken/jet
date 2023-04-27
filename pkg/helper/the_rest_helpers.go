@@ -1,8 +1,11 @@
 package helper
 
 import (
+	"bufio"
 	"bytes"
 	"compress/zlib"
+	"io"
+	"os"
 )
 
 func AnyToString(any interface{}) string {
@@ -41,4 +44,20 @@ func Decompress(input []byte) ([]byte, error) {
 		return nil, err
 	}
 	return out.Bytes(), nil
+}
+
+func ReadStdin() string {
+	reader := bufio.NewReader(os.Stdin)
+	var result string
+	for {
+		input, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		result += input
+	}
+	return result
 }

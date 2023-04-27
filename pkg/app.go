@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/jet/pkg/database"
 	"github.com/jet/pkg/subcommands"
+	"github.com/jet/pkg/subcommands/commit"
 	"github.com/urfave/cli/v2"
 )
 
@@ -29,7 +30,7 @@ func NewCliApp(fs database.FileStorage) *cli.App {
 				Usage:       "./jet commit",
 				Description: "commit a jet change",
 				Action: func(ctx *cli.Context) error {
-					return subcommands.Commit(ctx, fs)
+					return commit.Commit(ctx, fs)
 				},
 			},
 		},
