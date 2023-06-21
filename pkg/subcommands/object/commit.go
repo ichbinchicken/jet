@@ -26,8 +26,8 @@ func (t Commit) Oid() []byte {
 	return t.oid
 }
 
-func NewCommit(author Author, msg string, treeOid []byte) Commit {
-	contents := generateCommitConents(author, msg, hex.EncodeToString(treeOid))
+func NewCommit(parentCommitOid string, author Author, msg string, treeOid []byte) Commit {
+	contents := generateCommitConents(parentCommitOid, author, msg, hex.EncodeToString(treeOid))
 	header := GenerateObjectHeader(helper.CommitType, len(contents))
 	return Commit{
 		odata: []byte(header + contents),
@@ -36,14 +36,20 @@ func NewCommit(author Author, msg string, treeOid []byte) Commit {
 	}
 }
 
-func generateCommitConents(author Author, msg string, oidHexStr string) string {
+func generateCommitConents(parentCommitOid string, author Author, msg string, oidHexStr string) string {
 	lines := []string{
 		fmt.Sprintf("tree %s", oidHexStr),
+	}
+	if parentCommitOid != "" {
+		lines = append(lines, fmt.Sprintf("parent %s", parentCommitOid))
+	}
+	moreLines := []string{
 		fmt.Sprintf("author %s", author.ToString()),
 		fmt.Sprintf("committer %s", author.ToString()),
 		"",
 		msg,
 	}
+	lines = append(lines, moreLines...)
 	return strings.Join(lines, "\n")
 }
 

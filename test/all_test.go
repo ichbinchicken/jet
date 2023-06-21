@@ -57,6 +57,26 @@ func (suite *AllTest) TestCommitOnce() {
 	}
 }
 
+func (suite *AllTest) TestCommitTwice() {
+	in := `ISSUE-123: this is the first commit message.
+- Hello world
+- Hello again
+`
+	generateOsStdin(in)
+	err := suite.app.Run([]string{"program", "commit"})
+
+	if err != nil {
+		panic(err)
+	}
+
+	in2 := `ISSUE-123: this is the second commit message.
+- Hello world
+- Hello again
+`
+	generateOsStdin(in2)
+	suite.app.Run([]string{"program", "commit"})
+}
+
 // blob.go
 func (suite *AllTest) TestSHA1_SkipSetup() {
 	out := object.GenerateSHA1Hash("abc")
@@ -117,7 +137,7 @@ func (suite *AllTest) TestWriteCommitUnit_SkipSetup() {
 	blob3 := object.NewBlob("こんにちは aloha", "dummy3.go")
 	blobs := []object.Blob{blob, blob2, blob3}
 	tree := object.NewTree(blobs)
-	newCommit := object.NewCommit(author, commitMsg, tree.Oid())
+	newCommit := object.NewCommit("", author, commitMsg, tree.Oid())
 	hexStr := hex.EncodeToString(newCommit.Oid())
 
 	err := suite.fs.WriteJetObject(".", &newCommit)
